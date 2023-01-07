@@ -1,4 +1,4 @@
-def projectDir = 'C:\\Users\\Rustam_Saitov\\IdeaProjects\\rdi-autotests'
+def projectDir = 'C:\\Users\\Rustam_Saitov\\Desktop\\pet\\taf_study'
 
 // Set up the Jenkins pipeline
 pipeline {
