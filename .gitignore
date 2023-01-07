@@ -5,3 +5,4 @@
 /build/
 **/test-output/*/*
 .allure
+trcli_config.yml
