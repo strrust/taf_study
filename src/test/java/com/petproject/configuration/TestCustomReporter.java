@@ -1,7 +1,6 @@
 package com.petproject.configuration;
 
 import org.testng.*;
-import org.testng.collections.Maps;
 import org.testng.internal.Utils;
 import org.testng.xml.XmlSuite;
 import org.w3c.dom.Document;
@@ -19,10 +18,8 @@ import java.io.FileOutputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class TestCustomReporter implements IReporter {
-    private static final Map<String, Pattern> ATTR_ESCAPES = Maps.newHashMap();
 
     private Document document;
 
