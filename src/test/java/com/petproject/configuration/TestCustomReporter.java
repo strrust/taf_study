@@ -117,7 +117,7 @@ public class TestCustomReporter implements IReporter {
     }
 
     private void addFailureElement(Element testcase, ITestResult testResult) {
-        // Create a failure information for failed tests
+        // Create a failure element for failed tests
         Throwable testResultThrowable = testResult.getThrowable();
         Element failure = document.createElement("failure");
         if (testResultThrowable != null) {
