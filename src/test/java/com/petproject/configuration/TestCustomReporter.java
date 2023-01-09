@@ -126,7 +126,8 @@ public class TestCustomReporter implements IReporter {
                 String formattedMessage = message.replace("\r", "").replace("\n", "");
                 failure.setAttribute("message", formattedMessage);
             }
-            failure.appendChild(document.createCDATASection(Utils.shortStackTrace(testResultThrowable, false)));
+            String formattedStackTrace = Utils.shortStackTrace(testResultThrowable, false).replace("\r", "");
+            failure.appendChild(document.createCDATASection(formattedStackTrace));
         }
         testcase.appendChild(failure);
     }
