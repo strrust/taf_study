@@ -34,7 +34,7 @@ pipeline {
                     parse_junit \
                     --title "Automated Regression Test Run ${BUILD_TIMESTAMP}" \
                     --run-description "Regression Time: ${BUILD_TIMESTAMP}" \
-                    -f "target/surefire-reports/Pet project suite/Tests.xml"
+                    -f "target/surefire-reports/customReport.xml"
                     """
                 }
             }
