@@ -1,8 +1,11 @@
 package com.petproject.configuration;
-import java.util.Collection;
-import java.util.List;
-import java.io.FileOutputStream;
-import java.util.Map;
+
+import org.testng.*;
+import org.testng.collections.Maps;
+import org.testng.internal.Utils;
+import org.testng.xml.XmlSuite;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -12,13 +15,15 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
-import org.testng.*;
-import org.testng.xml.XmlSuite;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.io.FileOutputStream;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestCustomReporter implements IReporter {
+    private static final Map<String, Pattern> ATTR_ESCAPES = Maps.newHashMap();
+
     private Document document;
 
     @Override
@@ -67,14 +72,15 @@ public class TestCustomReporter implements IReporter {
                     addTestCaseElement(testsuite, testResult);
                 }
                 for (ITestResult testResult : failedTests.getAllResults()) {
-                    addTestCaseElement(testsuite, testResult);
+                    Element testcase = addTestCaseElement(testsuite, testResult);
+                    addFailureElement(testcase, testResult);
                 }
                 for (ITestResult testResult : skippedTests.getAllResults()) {
                     Element testcase = addTestCaseElement(testsuite, testResult);
                     testcase.appendChild(document.createElement("skipped"));
                 }
                 for (ITestNGMethod testNGMethod : disabledTests) {
-                    Element testcase = addTestCaseElement(testsuite, testNGMethod);
+                    Element testcase = addSkippedTestCaseElement(testsuite, testNGMethod);
                     testcase.appendChild(document.createElement("skipped"));
                 }
             }
@@ -103,7 +109,7 @@ public class TestCustomReporter implements IReporter {
         return testcase;
     }
 
-    private Element addTestCaseElement(Element testsuite, ITestNGMethod testNGMethod) {
+    private Element addSkippedTestCaseElement(Element testsuite, ITestNGMethod testNGMethod) {
         // Create a testcase element for disabled tests
         Element testcase = document.createElement("testcase");
         testcase.setAttribute("name", testNGMethod.getMethodName());
@@ -111,5 +117,20 @@ public class TestCustomReporter implements IReporter {
         testcase.setAttribute("time", "0");
         testsuite.appendChild(testcase);
         return testcase;
+    }
+
+    private void addFailureElement(Element testcase, ITestResult testResult) {
+        Throwable testResultThrowable = testResult.getThrowable();
+        Element failure = document.createElement("failure");
+        if (testResultThrowable != null) {
+            failure.setAttribute("type", testResultThrowable.getClass().getName());
+            String message = testResultThrowable.getMessage();
+            if (message != null && message.length() > 0) {
+                String formattedMessage = message.replace("\r", "").replace("\n", "");
+                failure.setAttribute("message", formattedMessage);
+            }
+            failure.appendChild(document.createCDATASection(Utils.shortStackTrace(testResultThrowable, false)));
+        }
+        testcase.appendChild(failure);
     }
 }
