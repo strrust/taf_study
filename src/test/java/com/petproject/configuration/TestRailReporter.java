@@ -28,8 +28,8 @@ import java.util.Map;
  * 1) Automation ID field now depends on TestRail manual test case id
  * 2) Manual test case id must be specified with annotation @TestParameters(testRailId = "C35")
  * 3) It is possible to specify one TestRail manual case ID for few autotests.
- * Example:
  *
+ * Example:
  * @Test
  * @TestParameters(testRailId = "C35")
  * void firstTest() {
@@ -40,6 +40,7 @@ import java.util.Map;
  * void secondTest() {
  * //some code
  * }
+ *
  * Due to the feature of TestRail report parsing and TestRailReporter features (failed and skipped tests coming first)
  * if one linked autotest will fail manual test case linked by ID will be marked as "Failed" after report is loaded.
  */
