@@ -1,5 +1,6 @@
 package com.petproject.configuration;
 
+import lombok.SneakyThrows;
 import org.testng.*;
 import org.testng.internal.Utils;
 import org.testng.xml.XmlSuite;
@@ -15,6 +16,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.FileOutputStream;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -100,11 +103,12 @@ public class TestRailReporter implements IReporter {
         }
     }
 
+    @SneakyThrows
     private Element addTestCaseElement(Element testsuite, ITestResult testResult) {
         // Create a testcase element for the result
         Element testcase = document.createElement("testcase");
-        testcase.setAttribute("name", "TR-ID");
-        testcase.setAttribute("classname", "TA");
+        String testRailId = getTestRailId(testResult);
+        setTestRailAttributes(testcase, testRailId);
         testcase.setAttribute("realName", testResult.getName());
         testcase.setAttribute("realClassname", testResult.getTestClass().getName());
         testcase.setAttribute("time", String.valueOf(testResult.getEndMillis() - testResult.getStartMillis()));
@@ -112,9 +116,12 @@ public class TestRailReporter implements IReporter {
         return testcase;
     }
 
+    @SneakyThrows
     private Element addSkippedTestCaseElement(Element testsuite, ITestNGMethod testNGMethod) {
         // Create a testcase element for disabled tests
         Element testcase = document.createElement("testcase");
+        String testRailId = getTestRailId(testNGMethod);
+        setTestRailAttributes(testcase, testRailId);
         testcase.setAttribute("name", testNGMethod.getMethodName());
         testcase.setAttribute("classname", testNGMethod.getTestClass().getName());
         testsuite.appendChild(testcase);
@@ -136,5 +143,40 @@ public class TestRailReporter implements IReporter {
             failure.appendChild(document.createCDATASection(formattedStackTrace));
         }
         testcase.appendChild(failure);
+    }
+
+    private String getTestRailId(ITestResult testResult) throws NoSuchMethodException {
+        String[] testID;
+        IClass obj = testResult.getTestClass();
+        Class<?> newobj = obj.getRealClass();
+        Method testMethod = newobj.getMethod(testResult.getMethod().getMethodName());
+
+        if (testMethod.isAnnotationPresent(TestParameters.class)) {
+            TestParameters useAsTestName = testMethod.getAnnotation(TestParameters.class);
+            testID = (useAsTestName.testRailId());
+            return Arrays.stream(testID).iterator().next();
+        } else {
+            throw new RuntimeException(String.format("TestRail ID missed for %s", testResult.getMethod().getMethodName()));
+        }
+    }
+
+    private String getTestRailId(ITestNGMethod testNGMethod) throws NoSuchMethodException {
+        String[] testID;
+        IClass obj = testNGMethod.getTestClass();
+        Class<?> newobj = obj.getRealClass();
+        Method testMethod = newobj.getMethod(testNGMethod.getMethodName());
+
+        if (testMethod.isAnnotationPresent(TestParameters.class)) {
+            TestParameters useAsTestName = testMethod.getAnnotation(TestParameters.class);
+            testID = (useAsTestName.testRailId());
+            return Arrays.stream(testID).iterator().next();
+        } else {
+            throw new RuntimeException(String.format("TestRail ID missed for %s", testNGMethod.getMethodName()));
+        }
+    }
+
+    private void setTestRailAttributes(Element testcase, String testRailId) {
+        testcase.setAttribute("name", testRailId);
+        testcase.setAttribute("classname", "TA");
     }
 }
