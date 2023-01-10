@@ -30,7 +30,7 @@ pipeline {
                 dir(projectDir) {
                     bat """
                     "C:\\Users\\Rustam_Saitov\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\junitparser.exe" merge \
-                    --glob "target/surefire-reports/junitreports/TEST-*" "target/surefire-reports/junitreports/customReport.xml"
+                    --glob "target/surefire-reports/junitreports/TEST-*" "target/surefire-reports/customReport.xml"
                     """
                     bat """
                     "C:/Users/Rustam_Saitov/AppData/Local/Programs/Python/Python310/Scripts/trcli.exe" -y \
