@@ -19,11 +19,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public class TestCustomReporter implements IReporter {
+public class TestRailReporter implements IReporter {
 
     private Document document;
 
     //StringXMLBuffer
+    //"many-to-one" tcs problem
+    //automation_id = classname.name
 
     @Override
     public void generateReport(List<XmlSuite> xmlSuites, List<ISuite> suites, String outputDirectory) {
@@ -101,8 +103,10 @@ public class TestCustomReporter implements IReporter {
     private Element addTestCaseElement(Element testsuite, ITestResult testResult) {
         // Create a testcase element for the result
         Element testcase = document.createElement("testcase");
-        testcase.setAttribute("name", testResult.getName());
-        testcase.setAttribute("classname", testResult.getTestClass().getName());
+        testcase.setAttribute("name", "TR-ID");
+        testcase.setAttribute("classname", "TA");
+        testcase.setAttribute("realName", testResult.getName());
+        testcase.setAttribute("realClassname", testResult.getTestClass().getName());
         testcase.setAttribute("time", String.valueOf(testResult.getEndMillis() - testResult.getStartMillis()));
         testsuite.appendChild(testcase);
         return testcase;
@@ -113,7 +117,6 @@ public class TestCustomReporter implements IReporter {
         Element testcase = document.createElement("testcase");
         testcase.setAttribute("name", testNGMethod.getMethodName());
         testcase.setAttribute("classname", testNGMethod.getTestClass().getName());
-        testcase.setAttribute("time", "0");
         testsuite.appendChild(testcase);
         return testcase;
     }
