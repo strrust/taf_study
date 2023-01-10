@@ -23,6 +23,8 @@ public class TestCustomReporter implements IReporter {
 
     private Document document;
 
+    //StringXMLBuffer
+
     @Override
     public void generateReport(List<XmlSuite> xmlSuites, List<ISuite> suites, String outputDirectory) {
         // Iterate over all the suites

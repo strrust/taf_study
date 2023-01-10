@@ -1,9 +1,9 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
 
 <suite name="Pet project suite" verbose="5">
-    <listeners>
+    <!--<listeners>
         <listener class-name="com.petproject.configuration.TestCustomReporter"/>
-    </listeners>
+    </listeners>-->
     <test name="Tests">
         <classes>
             <class name="com.petproject.tests.SimpleTests"/>
