@@ -22,161 +22,152 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The class represents an approach to solving a problem when several autotests corresponds to one manual test case
+ * (one-to-many problem) in TestRail with TR CLI usage by generating special report for TR CLI:
+ * 1) Automation ID field now depends on TestRail manual test case id
+ * 2) Manual test case id must be specified with annotation @TestParameters(testRailId = "C35")
+ * 3) It is possible to specify one TestRail manual case ID for few autotests.
+ * Example:
+ *
+ * @Test
+ * @TestParameters(testRailId = "C35")
+ * void firstTest() {
+ * //some code
+ * }
+ * @Test
+ * @TestParameters(testRailId = "C35")
+ * void secondTest() {
+ * //some code
+ * }
+ * Due to the feature of TestRail report parsing and TestRailReporter features (failed and skipped tests coming first)
+ * if one linked autotest will fail manual test case linked by ID will be marked as "Failed" after report is loaded.
+ */
 public class TestRailReporter implements IReporter {
-
-    private Document document;
-
-    //StringXMLBuffer
-    //"many-to-one" tcs problem
-    //automation_id = classname.name
+    private Document reportDocument;
 
     @Override
     public void generateReport(List<XmlSuite> xmlSuites, List<ISuite> suites, String outputDirectory) {
-        // Iterate over all the suites
         for (ISuite suite : suites) {
-            // Get the results for the suite
             Map<String, ISuiteResult> results = suite.getResults();
 
-            // Create a document to store the report
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            DocumentBuilder db;
+            DocumentBuilder reportDocumentBuilder;
             try {
-                db = dbf.newDocumentBuilder();
+                reportDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             } catch (ParserConfigurationException e) {
                 throw new RuntimeException(e);
             }
-            document = db.newDocument();
-            Element testsuites = document.createElement("testsuites");
-            document.appendChild(testsuites);
+            reportDocument = reportDocumentBuilder.newDocument();
+            Element testSuites = reportDocument.createElement("testsuites");
+            reportDocument.appendChild(testSuites);
 
-            // Iterate over the results
             for (ISuiteResult result : results.values()) {
-                // Get the context for the result
                 ITestContext context = result.getTestContext();
-
-                // Get the list of test results
                 IResultMap passedTests = context.getPassedTests();
                 IResultMap failedTests = context.getFailedTests();
                 IResultMap skippedTests = context.getSkippedTests();
                 Collection<ITestNGMethod> disabledTests = context.getExcludedMethods();
 
-                // Create a testsuite element for the result
-                Element testsuite = document.createElement("testsuite");
-                testsuite.setAttribute("name", context.getName());
-                testsuite.setAttribute("tests", String.valueOf(context.getAllTestMethods().length));
-                testsuite.setAttribute("errors", "0");
-                testsuite.setAttribute("skipped", String.valueOf(skippedTests.size() + disabledTests.size()));
-                testsuite.setAttribute("failures", String.valueOf(failedTests.size()));
-                testsuite.setAttribute("timestamp", context.getStartDate().toString());
-                testsuite.setAttribute("time", String.valueOf(context.getEndDate().getTime() - context.getStartDate().getTime()));
-                testsuites.appendChild(testsuite);
+                Element testSuite = reportDocument.createElement("testsuite");
+                testSuite.setAttribute("name", context.getName());
+                testSuite.setAttribute("tests", String.valueOf(context.getAllTestMethods().length));
+                testSuite.setAttribute("errors", "0");
+                testSuite.setAttribute("skipped", String.valueOf(skippedTests.size() + disabledTests.size()));
+                testSuite.setAttribute("failures", String.valueOf(failedTests.size()));
+                testSuite.setAttribute("timestamp", context.getStartDate().toString());
+                testSuite.setAttribute("time", String.valueOf(context.getEndDate().getTime() - context.getStartDate().getTime()));
+                testSuites.appendChild(testSuite);
 
-                // Add the testcase elements for each test result
                 for (ITestResult testResult : failedTests.getAllResults()) {
-                    Element testcase = addTestCaseElement(testsuite, testResult);
-                    addFailureElement(testcase, testResult);
-                }
-                for (ITestResult testResult : passedTests.getAllResults()) {
-                    addTestCaseElement(testsuite, testResult);
+                    Element testCase = createTestCaseElement(testResult);
+                    testSuite.appendChild(testCase);
+                    createFailureElement(testCase, testResult);
                 }
                 for (ITestResult testResult : skippedTests.getAllResults()) {
-                    Element testcase = addTestCaseElement(testsuite, testResult);
-                    testcase.appendChild(document.createElement("skipped"));
+                    Element testCase = createTestCaseElement(testResult);
+                    testSuite.appendChild(testCase);
+                    testCase.appendChild(reportDocument.createElement("skipped"));
                 }
                 for (ITestNGMethod testNGMethod : disabledTests) {
-                    Element testcase = addSkippedTestCaseElement(testsuite, testNGMethod);
-                    testcase.appendChild(document.createElement("skipped"));
+                    Element testCase = createSkippedTestCaseElement(testNGMethod);
+                    testSuite.appendChild(testCase);
+                    testCase.appendChild(reportDocument.createElement("skipped"));
+                }
+                for (ITestResult testResult : passedTests.getAllResults()) {
+                    Element testCase = createTestCaseElement(testResult);
+                    testSuite.appendChild(testCase);
                 }
             }
-
-            // Write the report to a file
-            try {
-                FileOutputStream out = new FileOutputStream(outputDirectory + "/customReport.xml");
-                TransformerFactory tf = TransformerFactory.newInstance();
-                Transformer transformer = tf.newTransformer();
-                transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.transform(new DOMSource(document), new StreamResult(out));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            writeReportToFile(outputDirectory);
         }
     }
 
     @SneakyThrows
-    private Element addTestCaseElement(Element testsuite, ITestResult testResult) {
-        // Create a testcase element for the result
-        Element testcase = document.createElement("testcase");
-        String testRailId = getTestRailId(testResult);
-        setTestRailAttributes(testcase, testRailId);
-        testcase.setAttribute("realName", testResult.getName());
-        testcase.setAttribute("realClassname", testResult.getTestClass().getName());
-        testcase.setAttribute("time", String.valueOf(testResult.getEndMillis() - testResult.getStartMillis()));
-        testsuite.appendChild(testcase);
-        return testcase;
+    private void writeReportToFile(String outputDirectory) {
+        FileOutputStream out = new FileOutputStream(outputDirectory + "/customReport.xml");
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.transform(new DOMSource(reportDocument), new StreamResult(out));
     }
 
     @SneakyThrows
-    private Element addSkippedTestCaseElement(Element testsuite, ITestNGMethod testNGMethod) {
-        // Create a testcase element for disabled tests
-        Element testcase = document.createElement("testcase");
-        String testRailId = getTestRailId(testNGMethod);
-        setTestRailAttributes(testcase, testRailId);
-        testcase.setAttribute("realName", testNGMethod.getMethodName());
-        testcase.setAttribute("realClassname", testNGMethod.getTestClass().getName());
-        testsuite.appendChild(testcase);
-        return testcase;
+    private Element createTestCaseElement(ITestResult testResult) {
+        Element testCase = reportDocument.createElement("testcase");
+        String testRailId = getTestRailId(testResult.getTestClass(), testResult.getMethod().getMethodName());
+        setTestRailAttributes(testCase, testRailId);
+        testCase.setAttribute("tafname", testResult.getName());
+        testCase.setAttribute("tafclassname", testResult.getTestClass().getName());
+        testCase.setAttribute("time", String.valueOf(testResult.getEndMillis() - testResult.getStartMillis()));
+        return testCase;
     }
 
-    private void addFailureElement(Element testcase, ITestResult testResult) {
-        // Create a failure element for failed tests
+    @SneakyThrows
+    private Element createSkippedTestCaseElement(ITestNGMethod testNGMethod) {
+        Element testCase = reportDocument.createElement("testcase");
+        String testRailId = getTestRailId(testNGMethod.getTestClass(), testNGMethod.getMethodName());
+        setTestRailAttributes(testCase, testRailId);
+        testCase.setAttribute("tafname", testNGMethod.getMethodName());
+        testCase.setAttribute("tafclassname", testNGMethod.getTestClass().getName());
+        return testCase;
+    }
+
+    private void createFailureElement(Element testCase, ITestResult testResult) {
         Throwable testResultThrowable = testResult.getThrowable();
-        Element failure = document.createElement("failure");
+        Element failureElement = reportDocument.createElement("failure");
+
         if (testResultThrowable != null) {
-            failure.setAttribute("type", testResultThrowable.getClass().getName());
+            failureElement.setAttribute("type", testResultThrowable.getClass().getName());
             String message = testResultThrowable.getMessage();
             if (message != null && message.length() > 0) {
                 String formattedMessage = message.replace("\r", "").replace("\n", "");
-                failure.setAttribute("message", formattedMessage);
+                failureElement.setAttribute("message", formattedMessage);
             }
             String formattedStackTrace = Utils.shortStackTrace(testResultThrowable, false).replace("\r", "");
-            failure.appendChild(document.createCDATASection(formattedStackTrace));
+            failureElement.appendChild(reportDocument.createCDATASection(formattedStackTrace));
         }
-        testcase.appendChild(failure);
+        testCase.appendChild(failureElement);
     }
 
-    private String getTestRailId(ITestResult testResult) throws NoSuchMethodException {
-        String[] testID;
-        IClass obj = testResult.getTestClass();
-        Class<?> newobj = obj.getRealClass();
-        Method testMethod = newobj.getMethod(testResult.getMethod().getMethodName());
+    @SneakyThrows
+    private String getTestRailId(IClass testClass, String methodName) {
+        String[] testRailId;
+        Method testMethod = testClass.getRealClass().getMethod(methodName);
 
         if (testMethod.isAnnotationPresent(TestParameters.class)) {
-            TestParameters useAsTestName = testMethod.getAnnotation(TestParameters.class);
-            testID = (useAsTestName.testRailId());
-            return Arrays.stream(testID).iterator().next();
+            TestParameters testParametersAnnotation = testMethod.getAnnotation(TestParameters.class);
+            testRailId = testParametersAnnotation.testRailId();
+            return Arrays.stream(testRailId).iterator().next();
         } else {
-            throw new RuntimeException(String.format("TestRail ID missed for %s", testResult.getMethod().getMethodName()));
+            throw new IllegalArgumentException(String.format("TestRail ID missed for %s", methodName));
         }
     }
 
-    private String getTestRailId(ITestNGMethod testNGMethod) throws NoSuchMethodException {
-        String[] testID;
-        IClass obj = testNGMethod.getTestClass();
-        Class<?> newobj = obj.getRealClass();
-        Method testMethod = newobj.getMethod(testNGMethod.getMethodName());
-
-        if (testMethod.isAnnotationPresent(TestParameters.class)) {
-            TestParameters useAsTestName = testMethod.getAnnotation(TestParameters.class);
-            testID = (useAsTestName.testRailId());
-            return Arrays.stream(testID).iterator().next();
-        } else {
-            throw new RuntimeException(String.format("TestRail ID missed for %s", testNGMethod.getMethodName()));
-        }
-    }
-
-    private void setTestRailAttributes(Element testcase, String testRailId) {
-        testcase.setAttribute("name", testRailId);
-        testcase.setAttribute("classname", "TA");
+    private void setTestRailAttributes(Element testCase, String testRailId) {
+        /*
+        TestRail custom test case field automation_id = classname.name
+         */
+        testCase.setAttribute("name", testRailId);
+        testCase.setAttribute("classname", "TA");
     }
 }
