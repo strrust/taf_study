@@ -72,12 +72,12 @@ public class TestRailReporter implements IReporter {
                 testsuites.appendChild(testsuite);
 
                 // Add the testcase elements for each test result
-                for (ITestResult testResult : passedTests.getAllResults()) {
-                    addTestCaseElement(testsuite, testResult);
-                }
                 for (ITestResult testResult : failedTests.getAllResults()) {
                     Element testcase = addTestCaseElement(testsuite, testResult);
                     addFailureElement(testcase, testResult);
+                }
+                for (ITestResult testResult : passedTests.getAllResults()) {
+                    addTestCaseElement(testsuite, testResult);
                 }
                 for (ITestResult testResult : skippedTests.getAllResults()) {
                     Element testcase = addTestCaseElement(testsuite, testResult);
