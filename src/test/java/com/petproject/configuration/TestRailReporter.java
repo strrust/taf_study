@@ -27,7 +27,7 @@ import java.util.Map;
  * (one-to-many problem) in TestRail with TR CLI usage by generating special report for TR CLI:
  * 1) Automation ID field now depends on TestRail manual test case id
  * 2) Manual test case id must be specified with annotation @TestParameters(testRailId = "C35")
- * 3) It is possible to specify one TestRail manual case ID for few autotests.
+ * 3) It is possible to specify one TestRail manual case ID for few autotests
  *
  * Example:
  * @Test
@@ -82,7 +82,8 @@ public class TestRailReporter implements IReporter {
                 for (ITestResult testResult : failedTests.getAllResults()) {
                     Element testCase = createTestCaseElement(testResult);
                     testSuite.appendChild(testCase);
-                    createFailureElement(testCase, testResult);
+                    Element failureElement = createFailureElement(testResult);
+                    testCase.appendChild(failureElement);
                 }
                 for (ITestResult testResult : skippedTests.getAllResults()) {
                     Element testCase = createTestCaseElement(testResult);
@@ -133,7 +134,7 @@ public class TestRailReporter implements IReporter {
         return testCase;
     }
 
-    private void createFailureElement(Element testCase, ITestResult testResult) {
+    private Element createFailureElement(ITestResult testResult) {
         Throwable testResultThrowable = testResult.getThrowable();
         Element failureElement = reportDocument.createElement("failure");
 
@@ -147,7 +148,7 @@ public class TestRailReporter implements IReporter {
             String formattedStackTrace = Utils.shortStackTrace(testResultThrowable, false).replace("\r", "");
             failureElement.appendChild(reportDocument.createCDATASection(formattedStackTrace));
         }
-        testCase.appendChild(failureElement);
+        return failureElement;
     }
 
     @SneakyThrows
