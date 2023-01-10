@@ -3,6 +3,11 @@ def projectDir = 'C:\\Users\\Rustam_Saitov\\Desktop\\pet\\taf_study'
 // Set up the Jenkins pipeline
 pipeline {
     agent any
+
+    environment {
+        USER_SCRIPT_PATH = "C:\\Users\\Rustam_Saitov\\AppData\\Local\\Programs\\Python\\Python310\\Scripts"
+    }
+
     stages {
         stage('Build') {
             steps {
@@ -29,11 +34,11 @@ pipeline {
             script {
                 dir(projectDir) {
                     bat """
-                    junitparser merge \
+                    "${env.USER_SCRIPT_PATH}\\junitparser.exe" merge \
                     --glob "target/surefire-reports/junitreports/TEST-*" "target/surefire-reports/customReport.xml"
                     """
                     bat """
-                    "C:/Users/Rustam_Saitov/AppData/Local/Programs/Python/Python310/Scripts/trcli.exe" -y \
+                    "${env.USER_SCRIPT_PATH}\\trcli.exe" -y \
                     --config trcli_config.yml \
                     parse_junit \
                     --title "Automated Regression Test Run ${BUILD_TIMESTAMP}" \
