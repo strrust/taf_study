@@ -18,6 +18,12 @@ public class SimpleTests extends AbstractTestNGSpringContextTests {
         then(2 + 2).isEqualTo(4);
     }
 
+    @Test
+    @TestParameters(testRailId = "C34")
+    public void twoPlusTwoEqualsFourSecond() {
+        then(2 + 2).isEqualTo(5);
+    }
+
     //failed with assertion
     @Test
     @TestParameters(testRailId = "C32")
