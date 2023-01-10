@@ -122,8 +122,8 @@ public class TestRailReporter implements IReporter {
         Element testcase = document.createElement("testcase");
         String testRailId = getTestRailId(testNGMethod);
         setTestRailAttributes(testcase, testRailId);
-        testcase.setAttribute("name", testNGMethod.getMethodName());
-        testcase.setAttribute("classname", testNGMethod.getTestClass().getName());
+        testcase.setAttribute("realName", testNGMethod.getMethodName());
+        testcase.setAttribute("realClassname", testNGMethod.getTestClass().getName());
         testsuite.appendChild(testcase);
         return testcase;
     }
