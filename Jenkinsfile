@@ -29,7 +29,7 @@ pipeline {
             script {
                 dir(projectDir) {
                     bat """
-                    "C:\\Users\\Rustam_Saitov\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\junitparser.exe" merge \
+                    junitparser merge \
                     --glob "target/surefire-reports/junitreports/TEST-*" "target/surefire-reports/customReport.xml"
                     """
                     bat """
