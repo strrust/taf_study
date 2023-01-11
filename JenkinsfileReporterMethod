@@ -37,8 +37,8 @@ pipeline {
                     "${env.USER_SCRIPT_PATH}\\trcli.exe" -y \
                     --config trcli_config.yml \
                     parse_junit \
-                    --title "Automated Regression Test Run ${BUILD_TIMESTAMP}" \
-                    --run-description "Regression Time: ${BUILD_TIMESTAMP}" \
+                    --title "Automated Regression Test Run #${BUILD_ID} ${BUILD_TIMESTAMP}" \
+                    --run-description "Regression Time: ${BUILD_TIMESTAMP}, Jenkins Build ID: #${BUILD_ID}" \
                     -f "target/surefire-reports/customReport.xml"
                     """
                 }
